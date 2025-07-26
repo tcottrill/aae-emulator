@@ -1,0 +1,34 @@
+.column {
+  float: left;
+  padding: 5px;
+}
+
+.floatingRight {
+  float: right;
+}
+
+.quarterWidth {
+  width: 25%;
+}
+
+.almostHalfWidth {
+  width: 48%;
+}
+
+.row::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+.centerText {
+  text-align: center;
+}
+
+.fullSize {
+  width: 100%;
+}
+
+body {
+  background-color: #eeece1;
+}
