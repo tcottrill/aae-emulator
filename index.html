@@ -1,141 +1,1193 @@
 <!DOCTYPE html>
-<html lang=" en"><head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>AAE (Another Arcade Emulator) | AAE is a primarily vector based arcade system emulator/simulator written using C, C++ and OpenGL.</title>
-<meta name="generator" content="Jekyll v4.2.2" />
-<meta property="og:title" content="AAE (Another Arcade Emulator)" />
-<meta property="og:locale" content="en_US" />
-<meta name="description" content="AAE is a primarily vector based arcade system emulator/simulator written using C, C++ and OpenGL." />
-<meta property="og:description" content="AAE is a primarily vector based arcade system emulator/simulator written using C, C++ and OpenGL." />
-<link rel="canonical" href="http://localhost:4000/" />
-<meta property="og:url" content="http://localhost:4000/" />
-<meta property="og:site_name" content="AAE (Another Arcade Emulator)" />
-<meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="AAE (Another Arcade Emulator)" />
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebSite","description":"AAE is a primarily vector based arcade system emulator/simulator written using C, C++ and OpenGL.","headline":"AAE (Another Arcade Emulator)","name":"AAE (Another Arcade Emulator)","url":"http://localhost:4000/"}</script>
-<!-- End Jekyll SEO tag -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AAE — Another Arcade Emulator</title>
+<meta name="description" content="A phosphor-accurate OpenGL emulator for classic vector arcade games — Asteroids, Tempest, Major Havoc, Star Wars, and 100+ more. Windows x64.">
+<meta property="og:title" content="AAE — Another Arcade Emulator">
+<meta property="og:description" content="A phosphor-accurate OpenGL emulator for classic vector arcade games. Windows x64.">
+<meta property="og:image" content="assets/img/aae-social-preview.png">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ── Token system — palette matched to the cyan vector logo ── */
+  :root {
+    --black:    #060a11;   /* blue-tinted near-black, matches logo starfield */
+    --glass:    #0a0f18;
+    --card:     #0e1420;
+    --border:   #182433;
+    --dim:      #26384a;
+    --muted:    #5e7488;
+    --body:     #9bb2c6;
+    --cyan:     #4fd4ff;   /* PRIMARY — the logo's electric beam glow */
+    --cyan-br:  #ade8ff;   /* white-hot beam core */
+    --blue:     #2a8cff;
+    --amber:    #ffc94d;   /* warm accent for the raster set */
+    --red:      #ff5a5a;
+    --white:    #dcecf7;
+    --mono:     'Share Tech Mono', monospace;
+    --sans:     'Inter', system-ui, sans-serif;
+    --glow-sm:  0 0 6px var(--cyan), 0 0 14px rgba(79,212,255,.35);
+    --glow-md:  0 0 10px var(--cyan), 0 0 28px rgba(79,212,255,.4), 0 0 60px rgba(79,212,255,.15);
+  }
 
-<link rel="stylesheet" type="text/css" href="assets/main.css">
-<link rel="stylesheet" type="text/css" href="assets/css/main.css">
-<link rel="stylesheet" type="text/css" href="assets/css/modal.css">
-<link rel="canonical" href="http://localhost:4000/" />
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--black);
+    color: var(--body);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── CRT scanline overlay (signature element) ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1000;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,.18) 3px,
+        rgba(0,0,0,.18) 4px
+      );
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.65) 100%);
+  }
+
+  /* ── Layout helpers ── */
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 96px 0; }
+  .section-label {
+    font-family: var(--mono);
+    font-size: .75rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 12px;
+    opacity: .85;
+  }
+  h2 {
+    font-family: var(--mono);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .section-sub {
+    color: var(--muted);
+    font-size: .95rem;
+    max-width: 600px;
+    margin-bottom: 56px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 500;
+    padding: 0 24px;
+    background: rgba(6,10,17,.9);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: var(--cyan);
+    text-shadow: var(--glow-sm);
+    letter-spacing: .08em;
+  }
+  .nav-logo span { color: var(--muted); font-size: .75em; }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: .8rem;
+    letter-spacing: .1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--cyan); text-shadow: var(--glow-sm); text-decoration: none; }
+  .nav-dl {
+    font-family: var(--mono);
+    font-size: .75rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--black);
+    background: var(--cyan);
+    padding: 7px 18px;
+    border-radius: 2px;
+    transition: box-shadow .2s;
+  }
+  .nav-dl:hover { box-shadow: var(--glow-sm); text-decoration: none; }
+  .nav-hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
+  .nav-hamburger span { width: 22px; height: 2px; background: var(--cyan); display: block; }
+
+  /* ── HERO — logo banner carries the headline ── */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 110px 24px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  #hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: .3;
+    animation: grid-drift 18s linear infinite;
+  }
+  @keyframes grid-drift {
+    from { background-position: 0 0; }
+    to   { background-position: 60px 60px; }
+  }
+  #hero::after {
+    content: '';
+    position: absolute;
+    top: 38%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px; height: 440px;
+    background: radial-gradient(ellipse, rgba(79,212,255,.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-inner { position: relative; z-index: 2; max-width: 960px; margin: 0 auto; text-align: center; }
+  .hero-logo {
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto 36px;
+    filter: drop-shadow(0 0 24px rgba(79,212,255,.35));
+    animation: logo-pulse 5s ease-in-out infinite;
+  }
+  @keyframes logo-pulse {
+    0%, 100% { filter: drop-shadow(0 0 18px rgba(79,212,255,.3)); }
+    50%       { filter: drop-shadow(0 0 34px rgba(79,212,255,.55)); }
+  }
+  .hero-desc {
+    font-size: 1.08rem;
+    color: var(--body);
+    max-width: 600px;
+    margin: 0 auto 40px;
+    line-height: 1.75;
+  }
+  .hero-desc strong { color: var(--cyan-br); font-weight: 500; }
+  .hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: .85rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--black);
+    background: var(--cyan);
+    padding: 14px 32px;
+    border-radius: 2px;
+    transition: box-shadow .2s, transform .15s;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .btn-primary:hover { box-shadow: var(--glow-md); transform: translateY(-2px); text-decoration: none; }
+  .btn-secondary {
+    font-family: var(--mono);
+    font-size: .85rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    padding: 14px 32px;
+    border-radius: 2px;
+    transition: background .2s, box-shadow .2s;
+  }
+  .btn-secondary:hover { background: rgba(79,212,255,.07); box-shadow: var(--glow-sm); text-decoration: none; }
+  .hero-badges {
+    margin-top: 48px;
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .1em;
+    border: 1px solid var(--dim);
+    color: var(--muted);
+    padding: 4px 12px;
+    border-radius: 2px;
+  }
+  .badge.active { border-color: var(--cyan); color: var(--cyan); }
+  .scroll-hint {
+    position: absolute;
+    bottom: 36px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .2em;
+    color: var(--dim);
+    text-transform: uppercase;
+    animation: hint-bob 2.4s ease-in-out infinite;
+  }
+  @keyframes hint-bob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+  /* ── SCREENSHOTS ── */
+  #screenshots { background: var(--glass); }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .gallery-item {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    aspect-ratio: 4/3;
+    cursor: pointer;
+    background: var(--card);
+  }
+  .gallery-item img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform .4s ease, filter .4s ease;
+    filter: brightness(.9);
+  }
+  .gallery-item:hover img { transform: scale(1.05); filter: brightness(1.12); }
+  .gallery-caption {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(6,10,17,.92));
+    padding: 20px 14px 12px;
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .1em;
+    color: var(--cyan);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity .3s, transform .3s;
+  }
+  .gallery-item:hover .gallery-caption { opacity: 1; transform: translateY(0); }
+  .gallery-item::after {
+    content: '⤢';
+    position: absolute;
+    top: 10px; right: 12px;
+    font-size: .9rem;
+    color: var(--cyan);
+    opacity: 0;
+    transition: opacity .3s;
+    text-shadow: var(--glow-sm);
+  }
+  .gallery-item:hover::after { opacity: .9; }
+
+  /* ── LIGHTBOX ── */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(3,5,9,.94);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .28s ease, visibility .28s ease;
+  }
+  .lightbox.open { opacity: 1; visibility: visible; }
+  .lb-stage {
+    position: relative;
+    max-width: 92vw;
+    max-height: 84vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .lb-img {
+    max-width: 92vw;
+    max-height: 78vh;
+    width: auto; height: auto;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    box-shadow: 0 0 60px rgba(79,212,255,.12);
+    background: var(--card);
+    transition: opacity .18s ease;
+  }
+  .lb-caption {
+    font-family: var(--mono);
+    font-size: .8rem;
+    letter-spacing: .1em;
+    color: var(--cyan);
+    margin-top: 16px;
+    text-align: center;
+    text-shadow: var(--glow-sm);
+  }
+  .lb-count { color: var(--muted); text-shadow: none; margin-left: 10px; }
+  .lb-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(14,20,32,.7);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--cyan);
+    font-size: 1.4rem;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+    user-select: none;
+  }
+  .lb-btn:hover { border-color: var(--cyan); box-shadow: var(--glow-sm); background: rgba(14,20,32,.95); }
+  .lb-prev { left: -72px; }
+  .lb-next { right: -72px; }
+  .lb-close {
+    position: fixed;
+    top: 22px; right: 26px;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(14,20,32,.7);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--cyan);
+    font-size: 1.3rem;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .lb-close:hover { border-color: var(--red); color: var(--red); box-shadow: 0 0 14px rgba(255,90,90,.3); }
+  @media (max-width: 900px) {
+    .lb-prev { left: 8px; }
+    .lb-next { right: 8px; }
+    .lb-btn { width: 44px; height: 44px; background: rgba(14,20,32,.85); }
+  }
+
+  /* ── FEATURES ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+  }
+  .feature-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 28px;
+    transition: border-color .25s, box-shadow .25s;
+  }
+  .feature-card:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 20px rgba(79,212,255,.06);
+  }
+  .feature-icon { font-size: 1.5rem; margin-bottom: 14px; }
+  .feature-title {
+    font-family: var(--mono);
+    font-size: .92rem;
+    color: var(--white);
+    margin-bottom: 8px;
+    letter-spacing: .05em;
+  }
+  .feature-desc { font-size: .88rem; color: var(--muted); line-height: 1.65; }
+
+  /* ── ABOUT ── */
+  #about { background: var(--glass); }
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+    align-items: start;
+  }
+  .about-body p { color: var(--body); font-size: .95rem; margin-bottom: 20px; }
+  .about-body p strong { color: var(--white); }
+  .about-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 24px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 2.2rem;
+    color: var(--cyan);
+    text-shadow: var(--glow-sm);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .stat-label {
+    font-size: .78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+  .tech-row { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .tech-tag {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .08em;
+    border: 1px solid var(--dim);
+    color: var(--muted);
+    padding: 4px 11px;
+    border-radius: 2px;
+  }
+  .tech-tag.accent { border-color: var(--cyan); color: var(--cyan); }
+
+  /* ── GAMES ── */
+  .games-intro {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 56px;
+  }
+  .cat-title {
+    font-family: var(--mono);
+    font-size: .8rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-title.raster { color: var(--amber); }
+  .game-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .game-list li {
+    font-family: var(--mono);
+    font-size: .73rem;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 3px 9px;
+    border-radius: 2px;
+  }
+  .game-list li:hover { color: var(--white); border-color: var(--dim); }
+  .games-note {
+    font-family: var(--mono);
+    font-size: .8rem;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    padding: 16px 20px;
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* ── DOWNLOAD ── */
+  #download { background: var(--glass); }
+  .download-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 48px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+    align-items: center;
+  }
+  .dl-title {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    color: var(--white);
+    margin-bottom: 10px;
+  }
+  .dl-ver {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    padding: 2px 10px;
+    border-radius: 2px;
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+  .dl-desc { color: var(--muted); font-size: .9rem; max-width: 520px; }
+  .release-line {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin: 20px 0 4px;
+    padding: 14px 18px;
+    background: rgba(79,212,255,.05);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cyan);
+    border-radius: 0 3px 3px 0;
+    font-family: var(--mono);
+    font-size: .82rem;
+  }
+  .release-tag { color: var(--cyan); text-shadow: var(--glow-sm); letter-spacing: .05em; }
+  .release-date { color: var(--dim); }
+  .release-what { color: var(--body); flex-basis: 100%; line-height: 1.6; }
+  .release-what::before { content: "▸ "; color: var(--cyan); }
+  .release-link { font-size: .76rem; color: var(--muted); border-bottom: 1px solid var(--dim); }
+  .release-link:hover { color: var(--cyan); border-color: var(--cyan); text-decoration: none; }
+  .dl-reqs {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: .75rem;
+    color: var(--dim);
+    line-height: 2;
+  }
+  .dl-reqs span { color: var(--muted); margin-left: 8px; }
+  .dl-btns { display: flex; flex-direction: column; gap: 12px; min-width: 200px; }
+  .warning-box {
+    margin-top: 32px;
+    display: flex;
+    gap: 14px;
+    background: rgba(255,90,90,.06);
+    border: 1px solid rgba(255,90,90,.2);
+    border-radius: 3px;
+    padding: 16px 20px;
+    font-size: .83rem;
+    color: var(--muted);
+    align-items: flex-start;
+  }
+  .warning-icon { color: var(--red); font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+
+  /* ── USAGE ── */
+  .steps { counter-reset: step; display: grid; gap: 0; }
+  .step {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 24px;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    counter-increment: step;
+    font-family: var(--mono);
+    font-size: 1.8rem;
+    color: var(--dim);
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .step-num::before { content: counter(step, decimal-leading-zero); }
+  .step-title {
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+  .step-body { font-size: .88rem; color: var(--muted); }
+  code {
+    font-family: var(--mono);
+    font-size: .82rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--cyan);
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--glass);
+    border-top: 1px solid var(--border);
+    padding: 48px 24px;
+  }
+  .footer-inner {
+    max-width: 1120px; margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 32px;
+  }
+  .footer-logo {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: var(--cyan);
+    text-shadow: var(--glow-sm);
+    margin-bottom: 8px;
+  }
+  .footer-copy {
+    font-size: .78rem;
+    color: var(--muted);
+    max-width: 340px;
+    line-height: 1.7;
+  }
+  .footer-links-title {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .15em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .footer-links ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .footer-links a { font-size: .84rem; color: var(--muted); transition: color .2s; }
+  .footer-links a:hover { color: var(--cyan); text-decoration: none; }
+  .footer-bottom {
+    max-width: 1120px; margin: 32px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: var(--dim);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .nav-links, .nav-dl { display: none; }
+    .nav-hamburger { display: flex; }
+    .about-grid { grid-template-columns: 1fr; gap: 40px; }
+    .games-intro { grid-template-columns: 1fr; }
+    .download-panel { grid-template-columns: 1fr; }
+    .dl-btns { flex-direction: row; flex-wrap: wrap; }
+    section { padding: 64px 0; }
+  }
+  @media (max-width: 480px) {
+    .hero-ctas { flex-direction: column; align-items: stretch; }
+    .about-stats { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ── REDUCED MOTION ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
 </head>
 <body>
-<header class="site-header" role="banner">
-  <div class="wrapper">
-    <a class="site-title" rel="author" href="index.html">AAE (Another Arcade Emulator)</a>
-    <nav class="site-nav">
-      <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-      <label for="nav-trigger">
-        <span class="menu-icon">
-          <svg viewBox="0 0 18 15" width="18px" height="15px">
-            <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z" />
-          </svg>
-        </span>
-      </label>
-      <div class="trigger">
-        <a class="page-link" href="about.html">About</a>
-        <a class="page-link" href="blog.html">Blog</a>
-        <a class="page-link" href="downloads.html">Downloads</a>
-        <a class="page-link" href="faq.html">FAQ</a>
-      </div>
-    </nav>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">A·A·E <span>/ Another Arcade Emulator</span></div>
+  <div class="nav-links">
+    <a href="#screenshots">Screenshots</a>
+    <a href="#features">Features</a>
+    <a href="#games">Games</a>
+    <a href="#about">About</a>
+    <a href="#download">Download</a>
   </div>
-</header>
+  <a href="https://github.com/tcottrill/AAE/releases" class="nav-dl" target="_blank" rel="noopener">Download&nbsp;↓</a>
+  <div class="nav-hamburger" onclick="this.classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
 
-<div id="myModal" class="modal">
-  <span class="close">&times;</span>
-  <img class="modal-content" id="img01">
-  <div id="caption"></div>
-</div>
-
-<main class="page-content" aria-label="Content">
-  <div class="wrapper">
-
-    <h1>Welcome to A.A.E (Another Arcade Emulator)</h1>
-    <p>A.A.E is a personal project inspired by the early versions of M.A.M.E (TM), originally built on code from versions 0.29 through 0.90, combined with a substantial amount of my own work. This emulator was created out of my passion for classic arcade games and my desire to learn, and it is shared here as a nostalgic and archival experience.</p>
-
-    <p>A.A.E focuses on emulating vector-based arcade games with a strong emphasis on visual accuracy. Even after many years, I’m still proud of how the graphics hold up—especially on modern displays with features like OLED and FreeSync.</p>
-
-    <p>While A.A.E was initially based on M.A.M.E, many core components—including the 6502 and Z80 CPU cores, windowing system, rendering engine, audio, input, file loading, artwork handling, and memory management—are completely custom. All original M.A.M.E code remains the property of the MAME Team, whose dedication and contributions I deeply respect and appreciate.</p>
-
-    <p>Currently, this project is undergoing a complete renovation. Many command-line options are temporarily non-functional, and the original GUI has been removed while I update and modernize the code. Please check my GITHUB CHANGELOG.TXT for the latest progress and updates.</p>
-
-    <h1 id="screenshots">SCREENSHOTS</h1>
-
-    <div class="row">
-      <div class="column quarterWidth"><img src="assets/img/asteroids.webp" class="fullSize screenShot" alt="Asteroids" /></div>
-      <div class="column quarterWidth"><img src="assets/img/astdxblur.webp" class="fullSize screenShot" alt="Asteroids Deluxe" /></div>
-      <div class="column quarterWidth"><img src="assets/img/landertest.webp" class="fullSize screenShot" alt="Lunar Lander" /></div>
-      <div class="column quarterWidth"><img src="assets/img/tempestm.webp" class="fullSize screenShot" alt="Clay Cowgill's MultiTempest" /></div>
-      <div class="column quarterWidth"><img src="assets/img/sduelblur.webp" class="fullSize screenShot" alt="Space Duel" /></div>
-      <div class="column quarterWidth"><img src="assets/img/solarqblur.webp" class="fullSize screenShot" alt="Solar Quest" /></div>
-      <div class="column quarterWidth"><img src="assets/img/ripoff.webp" class="fullSize screenShot" alt="RipOff" /></div>
-      <div class="column quarterWidth"><img src="assets/img/gui.webp" class="fullSize screenShot" alt="Embedded Frontend" /></div>
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-inner">
+    <img
+      src="assets/img/aae-logo.png"
+      alt="AAE — Another Arcade Emulator · Vector · Raster · OpenGL · Est. 2008, Rebuilt 2026"
+      class="hero-logo"
+    >
+    <p class="hero-desc">
+      AAE brings glowing, phosphor-soft vector beams to your modern display — the way these games
+      looked through a real CRT in a dark arcade, not as flat lines on a screen.
+      <strong>100+ games. XInput. XAudio2.</strong> No emulation compromises.
+    </p>
+    <div class="hero-ctas">
+      <a href="https://github.com/tcottrill/AAE/releases" class="btn-primary" target="_blank" rel="noopener">
+        ⬇ Download AAE
+      </a>
+      <a href="https://github.com/tcottrill/AAE" class="btn-secondary" target="_blank" rel="noopener">
+        View on GitHub
+      </a>
     </div>
-
-    <h2 id="usage">USAGE</h2>
-    <p>Unzip AAE to the root of your hard disk, and either copy your current, split full mame romsets to the ROMS directory, or hand edit the aae.ini to point to your mame rom directory. Run AAE.EXE to start the built-in GUI, or aae gamename to run a specific game. See gamelist.txt for a full supported gamelist.</p>
-
-    <h2 id="notes">NOTES</h2>
-    <p>AAE ABSOLUTELY REQUIRES a current video card to run properly. The Ultimarc ArcadeVGA WILL NOT WORK. AVGA2 works well!</p>
-    <p>Wells D9200 Owners should set to 800x600, no bezel artwork for best results.</p>
-    <p>HIT &lt;TAB&gt; in the GUI or in-game to access the menu system. ALL SYSTEM WIDE SETTINGS NEED TO BE SET BY RUNNING THE BUILT-IN GUI.</p>
-
-  </div>
-</main>
-
-<footer class="site-footer h-card">
-  <data class="u-url" href=/></data>
-  <div class="wrapper">
-    <h2 class="footer-heading"><a href="https://github.com/tcottrill/AAE" target="_blank" style="color:inherit;text-decoration:none;">AAE (Another Arcade Emulator)</a></h2>
-    <div class="footer-col-wrapper">
-      <div class="footer-col footer-col-1">
-        <ul class="contact-list">
-          <li class="p-name"><a href="https://github.com/tcottrill/AAE" target="_blank" style="color:inherit;text-decoration:none;">AAE (Another Arcade Emulator)</a></li>
-        </ul>
-      </div>
-      <div class="footer-col footer-col-2">
-        <ul class="social-media-list">
-          <li>
-            <a href="https://github.com/tcottrill/AAE" target="_blank">
-              <svg class="svg-icon" style="width:22px;height:22px;"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg>
-            </a>
-          </li>
-        </ul>
-      </div>
-      <div class="footer-col footer-col-3">
-        <p>AAE is a primarily vector based arcade system emulator/simulator written using C, C++ and OpenGL.</p>
-      </div>
+    <div class="hero-badges">
+      <span class="badge active">GPL v3</span>
+      <span class="badge active">Windows 10 / 11</span>
+      <span class="badge active">C++17</span>
+      <span class="badge active">OpenGL 3.3</span>
+      <span class="badge">Active Renovation</span>
+      <span class="badge">100+ Games</span>
     </div>
   </div>
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="./assets/js/filePath.js"></script>
+  <div class="scroll-hint">scroll to explore</div>
+</section>
+
+<!-- SCREENSHOTS -->
+<section id="screenshots">
+  <div class="container">
+    <div class="section-label">In action</div>
+    <h2>See the phosphor glow</h2>
+    <p class="section-sub">Bloom, beam falloff, and per-vector intensity through an OpenGL shader pipeline — tuned to look right on a modern OLED or FreeSync display.</p>
+    <div class="gallery">
+      <div class="gallery-item">
+        <img src="assets/img/astdelux.png" alt="Asteroids Deluxe" loading="lazy">
+        <div class="gallery-caption">Asteroids Deluxe</div>
+      </div>
+      <div class="gallery-item">
+        <img src="assets/img/Aztarac.png" alt="Aztarac" loading="lazy">
+        <div class="gallery-caption">Aztarac</div>
+      </div>
+      <div class="gallery-item">
+        <img src="assets/img/esb.png" alt="Star Wars: The Empire Strikes Back" loading="lazy">
+        <div class="gallery-caption">Star Wars: The Empire Strikes Back</div>
+      </div>
+      <div class="gallery-item">
+        <img src="assets/img/mhavocpe.png" alt="Major Havoc — The Promised End" loading="lazy">
+        <div class="gallery-caption">Major Havoc — The Promised End</div>
+      </div>
+      <div class="gallery-item">
+        <img src="assets/img/warrior.png" alt="Warrior" loading="lazy">
+        <div class="gallery-caption">Warrior</div>
+      </div>
+      <div class="gallery-item">
+        <img src="assets/img/topgunnr.png" alt="TopGunner" loading="lazy">
+        <div class="gallery-caption">TopGunner</div>
+      </div>
+      <div class="gallery-item">
+        <img src="assets/img/warlords.png" alt="Warlords" loading="lazy">
+        <div class="gallery-caption">Warlords — raster, for fun</div>
+      </div>
+      <div class="gallery-item">
+        <img src="assets/img/gui.png" alt="In-game bezel artwork" loading="lazy">
+        <div class="gallery-caption">MAME-style bezel artwork</div>
+      </div>
+      <div class="gallery-item">
+        <img src="assets/img/graphics_menu.png" alt="Live graphics tuning menu" loading="lazy">
+        <div class="gallery-caption">Live graphics tuning</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Under the hood</div>
+    <h2>Built for accuracy,<br>rebuilt from the ground up</h2>
+    <p class="section-sub">Most of the original MAME infrastructure has been replaced. What's here now is custom code that has been improving steadily since 2008.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📡</div>
+        <div class="feature-title">Phosphor vector rendering</div>
+        <div class="feature-desc">OpenGL 3.3 core shader pipeline with bloom, beam falloff, and per-vector intensity. Live tuning knobs for glow, line width, and brightness — per game.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎮</div>
+        <div class="feature-title">Full XInput + keyboard</div>
+        <div class="feature-desc">Xbox-style controllers with menu navigation, in-game control, and rumble support. Raw Input keyboard system with multi-device awareness.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔊</div>
+        <div class="feature-title">Multithreaded XAudio2 engine</div>
+        <div class="feature-desc">Custom stereo audio engine with high-quality resampling, no crackling, no leaks. POKEY, AY-3-8910, and TMS36xx sound emulation.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Custom CPU cores</div>
+        <div class="feature-desc">All MAME CPU cores replaced with clean-room implementations except one: Aaron Giles' Cinematronics ccpu core, kept intentionally because it is a work of art.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖼️</div>
+        <div class="feature-title">MAME-style artwork support</div>
+        <div class="feature-desc">Full <code>.lay</code> artwork system — bezels, overlays, and scanlines for raster games, using current MAME ROM names throughout.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗂️</div>
+        <div class="feature-title">C++ driver registry</div>
+        <div class="feature-desc">Add or remove a game by adding or removing a single driver file. No <code>driver.c</code> editing, no build scripts to update.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🪟</div>
+        <div class="feature-title">Windows 10 / 11 & Win 7</div>
+        <div class="feature-desc">Primary target is Windows 10/11 x64. A tested Windows 7 x64 build is also maintained for legacy hardware owners.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🕹️</div>
+        <div class="feature-title">Vector-first hardware accuracy</div>
+        <div class="feature-desc">Atari AVG/DVG and Cinematronics hardware are the main focus. These are the games AAE was built for, and they receive the most careful attention.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-body">
+        <div class="section-label">The story</div>
+        <h2>17 years in the making</h2>
+        <p>AAE started in <strong>2008</strong> as a poorly-written M.A.M.E derivative — a fork of early MAME (0.29 through .90) built solely for one developer's amusement and learning. The whole point was to make vector arcade games <strong>look right</strong>: glowing, phosphor-soft beams instead of flat lines.</p>
+        <p>After sitting untouched for the better part of seventeen years, it's back. The audio engine, input system, frame timing, rendering pipeline, ROM loader, artwork handling, memory management, the driver registry — and one by one, <strong>every CPU core</strong> — have been rewritten as custom, non-MAME code.</p>
+        <p>It still stands on the MAME team's shoulders, and that debt is acknowledged openly. All MAME-derived code remains the copyright of the MAME team. But the climb from "early-MAME fork" to "almost everything here is mine now" has been the entire journey.</p>
+        <div class="tech-row">
+          <span class="tech-tag accent">C++17</span>
+          <span class="tech-tag accent">OpenGL 3.3</span>
+          <span class="tech-tag">XAudio2</span>
+          <span class="tech-tag">XInput</span>
+          <span class="tech-tag">Raw Input</span>
+          <span class="tech-tag">Visual Studio 2022</span>
+          <span class="tech-tag">Windows x64</span>
+        </div>
+      </div>
+      <div>
+        <div class="about-stats">
+          <div class="stat-card">
+            <span class="stat-num">2008</span>
+            <span class="stat-label">Project started</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num">100+</span>
+            <span class="stat-label">Emulated games</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num">1</span>
+            <span class="stat-label">MAME CPU core remaining</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num">GPL3</span>
+            <span class="stat-label">License</span>
+          </div>
+        </div>
+        <img
+          src="assets/img/menu.png"
+          alt="AAE built-in vector frontend"
+          style="margin-top:20px; border:1px solid var(--border); border-radius:3px;"
+          loading="lazy"
+        >
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GAMES -->
+<section id="games">
+  <div class="container">
+    <div class="section-label">Supported hardware</div>
+    <h2>Vector games first,<br>a few raster games for fun</h2>
+    <p class="section-sub">Vector arcade hardware is what AAE was built for. A raster path was added along the way, which brought a handful of classics along for the ride.</p>
+    <div class="games-intro">
+      <div class="game-category">
+        <div class="cat-title">Vector games — the main event</div>
+        <ul class="game-list">
+          <li>Asteroids</li>
+          <li>Asteroids Deluxe</li>
+          <li>Tempest</li>
+          <li>Major Havoc</li>
+          <li>Major Havoc: The Promised End</li>
+          <li>Battlezone</li>
+          <li>Red Baron</li>
+          <li>Gravitar</li>
+          <li>Space Duel</li>
+          <li>Black Widow</li>
+          <li>Lunar Lander</li>
+          <li>Star Wars</li>
+          <li>The Empire Strikes Back</li>
+          <li>Aztarac</li>
+          <li>Cosmic Chasm</li>
+          <li>Star Castle</li>
+          <li>Rip Off</li>
+          <li>Armor Attack</li>
+          <li>Warrior</li>
+          <li>Omega Race</li>
+          <li>Solar Quest</li>
+          <li>War of the Worlds</li>
+          <li>MultiTempest</li>
+          <li>+ many more</li>
+        </ul>
+      </div>
+      <div class="game-category">
+        <div class="cat-title raster">Raster games — along for the ride</div>
+        <ul class="game-list">
+          <li>Warlords</li>
+          <li>Galaxian</li>
+          <li>Galaga</li>
+          <li>Bosconian</li>
+          <li>Pac-Man</li>
+          <li>Ms. Pac-Man</li>
+          <li>Jr. Pac-Man</li>
+          <li>Super Pac-Man</li>
+          <li>Millipede</li>
+          <li>Centipede</li>
+          <li>Missile Command</li>
+          <li>Mappy</li>
+          <li>Dig Dug</li>
+          <li>Rally-X</li>
+          <li>Gyruss</li>
+          <li>Phoenix</li>
+          <li>Pleiads</li>
+          <li>Xevious</li>
+          <li>Space Invaders</li>
+        </ul>
+      </div>
+    </div>
+    <div class="games-note">
+      ⚠ The full supported romset list (100+) is available inside the app — open the built-in game menu to browse everything AAE currently runs. AAE uses current MAME ROM names.
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section id="download">
+  <div class="container">
+    <div class="download-panel">
+      <div>
+        <div class="dl-title">Download AAE <span class="dl-ver">v1.5 Latest</span></div>
+        <p class="dl-desc">Unzip to the root of your hard disk. Copy your MAME romsets to the <code>ROMS</code> directory or edit <code>aae.ini</code> to point at your existing ROM folder. Run <code>AAE.EXE</code> for the built-in GUI, or <code>aae gamename</code> for a specific title.</p>
+
+        <!-- ════════════ LATEST RELEASE — edit these 4 spots when you ship a new build ════════════ -->
+        <div class="release-line">
+          <span class="release-tag">▌ Latest: v1.5</span>
+          <span class="release-date">Released Jun 24, 2026</span>
+          <span class="release-what">Clean-room CPU core work continues — only the Cinematronics ccpu core remains from MAME. Renderer and audio refinements throughout.</span>
+          <a class="release-link" href="https://github.com/tcottrill/AAE/releases/tag/1.5" target="_blank" rel="noopener">Release notes →</a>
+        </div>
+        <!-- ═══════════════════════════════════════════════════════════════════════════════════════ -->
+        <div class="dl-reqs">
+          <div>Platform <span>Windows 10 / 11 x64 (Windows 7 build also available)</span></div>
+          <div>GPU <span>Modern GPU required. Ultimarc ArcadeVGA unsupported. AVGA2 works.</span></div>
+          <div>Controls <span>Press TAB in-game or in the GUI to access the menu system</span></div>
+        </div>
+        <div class="warning-box">
+          <span class="warning-icon">⚠</span>
+          <span>ROMs are <strong>not included</strong>. You must supply legally-obtained arcade ROMs. AAE is an archival, non-commercial project.</span>
+        </div>
+      </div>
+      <div class="dl-btns">
+        <a href="https://github.com/tcottrill/AAE/releases" class="btn-primary" target="_blank" rel="noopener">⬇ GitHub Releases</a>
+        <a href="https://github.com/tcottrill/AAE/blob/main/CHANGELOG.txt" class="btn-secondary" target="_blank" rel="noopener">📄 CHANGELOG</a>
+        <a href="https://github.com/tcottrill/AAE/blob/main/AAE%20Command%20Line%20Options.txt" class="btn-secondary" target="_blank" rel="noopener">📋 Command Line Options</a>
+        <a href="https://github.com/tcottrill/AAE/blob/main/AAE%20Configuration%20Options.txt" class="btn-secondary" target="_blank" rel="noopener">⚙ Configuration Reference</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- USAGE -->
+<section id="usage">
+  <div class="container">
+    <div class="section-label">Getting started</div>
+    <h2>Up and running in minutes</h2>
+    <p class="section-sub">AAE is designed to feel familiar to anyone who has used MAME — same ROM names, same general workflow.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num"></div>
+        <div>
+          <div class="step-title">Download & unzip</div>
+          <div class="step-body">Grab the latest release from GitHub Releases. Unzip the archive to the root of your hard disk (e.g. <code>C:\AAE\</code>). A modern GPU with OpenGL 3.3 support is required.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num"></div>
+        <div>
+          <div class="step-title">Add your ROMs</div>
+          <div class="step-body">Copy your MAME split full romsets to the <code>ROMS</code> directory, or hand-edit <code>aae.ini</code> to point at your existing MAME ROM folder. AAE uses current MAME ROM names.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num"></div>
+        <div>
+          <div class="step-title">Launch the GUI</div>
+          <div class="step-body">Run <code>AAE.EXE</code> to start the built-in vector frontend and browse all available games. Press <code>TAB</code> at any time to access the full settings menu. All system-wide settings must be configured here first.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num"></div>
+        <div>
+          <div class="step-title">Or launch a game directly</div>
+          <div class="step-body">Run <code>aae asteroids</code> (or any game name) from the command line to jump straight into a game. See <code>gamelist.txt</code> or <a href="https://github.com/tcottrill/AAE/blob/main/AAE%20Command%20Line%20Options.txt" target="_blank" rel="noopener">Command Line Options</a> for the full list and available flags.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">A·A·E</div>
+      <p class="footer-copy">Another Arcade Emulator — a personal archival project. Started in 2008. Still going. Licensed under GPL v3.<br><br>All MAME code used in this project remains the copyright of the MAME team and original authors. MAME is a trademark of its respective owners. This project is not affiliated with or endorsed by any rights holder.</p>
+    </div>
+    <div class="footer-links">
+      <div class="footer-links-title">Source</div>
+      <ul>
+        <li><a href="https://github.com/tcottrill/AAE" target="_blank" rel="noopener">GitHub Repository</a></li>
+        <li><a href="https://github.com/tcottrill/AAE/releases" target="_blank" rel="noopener">Releases</a></li>
+        <li><a href="https://github.com/tcottrill/AAE/blob/main/CHANGELOG.txt" target="_blank" rel="noopener">CHANGELOG</a></li>
+        <li><a href="https://github.com/tcottrill/AAE/blob/main/COPYING" target="_blank" rel="noopener">License (GPL v3)</a></li>
+      </ul>
+    </div>
+    <div class="footer-links">
+      <div class="footer-links-title">Docs</div>
+      <ul>
+        <li><a href="https://github.com/tcottrill/AAE/blob/main/AAE%20Command%20Line%20Options.txt" target="_blank" rel="noopener">Command Line Options</a></li>
+        <li><a href="https://github.com/tcottrill/AAE/blob/main/AAE%20Configuration%20Options.txt" target="_blank" rel="noopener">Configuration Reference</a></li>
+        <li><a href="https://github.com/tcottrill/AAE/blob/main/RENDERING_TUNING.md" target="_blank" rel="noopener">Rendering Tuning</a></li>
+        <li><a href="https://github.com/tcottrill/AAE/blob/main/Build%20Notes.txt" target="_blank" rel="noopener">Build Notes</a></li>
+      </ul>
+    </div>
+    <div class="footer-links">
+      <div class="footer-links-title">Community</div>
+      <ul>
+        <li><a href="https://github.com/tcottrill" target="_blank" rel="noopener">@tcottrill on GitHub</a></li>
+        <li><a href="https://github.com/tcottrill/AAE/issues" target="_blank" rel="noopener">Report an Issue</a></li>
+        <li><a href="http://www.mamedev.org" target="_blank" rel="noopener">MAME Project</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2008–2026 · AAE Project</span>
+    <span>GPL v3 · Windows x64 · Built with C++17 + OpenGL 3.3</span>
+  </div>
 </footer>
 
-<script>
-var modal = document.getElementById('myModal');
-var images = document.getElementsByClassName('screenShot');
-var modalImg = document.getElementById("img01");
-var captionText = document.getElementById("caption");
-for (var i = 0; i < images.length; i++) {
-  images[i].onclick = function () {
-    modal.style.display = "block";
-    modalImg.src = this.src;
-    captionText.innerHTML = this.alt;
-  }
-}
-document.getElementsByClassName("close")[0].onclick = function () {
-  modal.style.display = "none";
-}
-</script>
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+  <div class="lb-close" id="lbClose" role="button" tabindex="0" aria-label="Close">✕</div>
+  <div class="lb-btn lb-prev" id="lbPrev" role="button" tabindex="0" aria-label="Previous screenshot">‹</div>
+  <div class="lb-stage">
+    <img class="lb-img" id="lbImg" src="" alt="">
+    <div class="lb-caption"><span id="lbText"></span><span class="lb-count" id="lbCount"></span></div>
+  </div>
+  <div class="lb-btn lb-next" id="lbNext" role="button" tabindex="0" aria-label="Next screenshot">›</div>
+</div>
 
+<script>
+  // Active nav highlight on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.style.color = '');
+        const active = document.querySelector(`.nav-links a[href="#${e.target.id}"]`);
+        if (active) active.style.color = 'var(--cyan)';
+      }
+    });
+  }, { threshold: 0.4 });
+  sections.forEach(s => obs.observe(s));
+
+  // Fade-in on scroll
+  const fadeEls = document.querySelectorAll('.feature-card, .gallery-item, .step, .stat-card');
+  fadeEls.forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(18px)';
+    el.style.transition = 'opacity .5s ease, transform .5s ease';
+  });
+  const fadeObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        setTimeout(() => {
+          e.target.style.opacity = '1';
+          e.target.style.transform = 'translateY(0)';
+        }, 60 * (Array.from(fadeEls).indexOf(e.target) % 4));
+        fadeObs.unobserve(e.target);
+      }
+    });
+  });
+  fadeEls.forEach(el => fadeObs.observe(el));
+
+  // ── Lightbox ──
+  const galleryItems = Array.from(document.querySelectorAll('.gallery-item'));
+  const slides = galleryItems.map(item => {
+    const img = item.querySelector('img');
+    const cap = item.querySelector('.gallery-caption');
+    return { src: img.getAttribute('src'), alt: img.getAttribute('alt') || '', caption: cap ? cap.textContent.trim() : '' };
+  });
+
+  const lb       = document.getElementById('lightbox');
+  const lbImg    = document.getElementById('lbImg');
+  const lbText   = document.getElementById('lbText');
+  const lbCount  = document.getElementById('lbCount');
+  const lbClose  = document.getElementById('lbClose');
+  const lbPrev   = document.getElementById('lbPrev');
+  const lbNext   = document.getElementById('lbNext');
+  let current = 0;
+
+  function render(i) {
+    current = (i + slides.length) % slides.length;
+    const s = slides[current];
+    lbImg.style.opacity = '0';
+    const pre = new Image();
+    pre.onload = () => { lbImg.src = s.src; lbImg.alt = s.alt; lbImg.style.opacity = '1'; };
+    pre.src = s.src;
+    lbText.textContent = s.caption;
+    lbCount.textContent = `${current + 1} / ${slides.length}`;
+  }
+  function openLb(i) {
+    render(i);
+    lb.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    lbClose.focus();
+  }
+  function closeLb() {
+    lb.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  const next = () => render(current + 1);
+  const prev = () => render(current - 1);
+
+  galleryItems.forEach((item, i) => {
+    item.addEventListener('click', () => openLb(i));
+    item.setAttribute('tabindex', '0');
+    item.setAttribute('role', 'button');
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLb(i); }
+    });
+  });
+
+  lbClose.addEventListener('click', closeLb);
+  lbNext.addEventListener('click', e => { e.stopPropagation(); next(); });
+  lbPrev.addEventListener('click', e => { e.stopPropagation(); prev(); });
+  // click on the dark backdrop (not the image/controls) closes
+  lb.addEventListener('click', e => { if (e.target === lb || e.target.classList.contains('lb-stage')) closeLb(); });
+
+  document.addEventListener('keydown', e => {
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLb();
+    else if (e.key === 'ArrowRight') next();
+    else if (e.key === 'ArrowLeft') prev();
+  });
+  [lbPrev, lbNext, lbClose].forEach(btn => {
+    btn.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
+    });
+  });
+
+  // Touch swipe on the image stage
+  let touchX = null;
+  lb.addEventListener('touchstart', e => { touchX = e.changedTouches[0].clientX; }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 45) (dx < 0 ? next : prev)();
+    touchX = null;
+  }, { passive: true });
+</script>
 </body>
 </html>
